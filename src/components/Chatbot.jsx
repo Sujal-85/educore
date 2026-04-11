@@ -76,12 +76,12 @@ export default function Chatbot() {
       let model;
       if (genAI.getGenerativeModel) {
         model = genAI.getGenerativeModel({ 
-          model: "gemini-1.5-flash",
+          model: "gemini-2.5-flash",
           systemInstruction: systemInstruction 
         });
       } else if (genAI.ai && genAI.ai.getGenerativeModel) {
         model = genAI.ai.getGenerativeModel({ 
-          model: "gemini-1.5-flash",
+          model: "gemini-2.5-flash",
           systemInstruction: systemInstruction 
         });
       } else {
