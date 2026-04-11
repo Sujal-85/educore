@@ -57,6 +57,20 @@ export default function StudyPlan() {
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
+      const prompt = `You are an AI education assistant for FAMT Edu (Engineering College).
+Create a personalized study plan for: ${student.name} (Class ${student.class}-${student.section})
+Attendance: ${student.attendance}%, Behavior: ${student.behaviorScore}/100
+Marks: ${JSON.stringify(student.marks)}
+
+Create a detailed weekly study plan with:
+1. Weak subjects identification
+2. Time allocation based on scores
+3. Revision sessions
+4. Specific topics to focus on
+5. Improvement tips
+
+Use markdown formatting.`;
+
       const result = await model.generateContent(prompt);
       const planContent = result.response.text();
       
@@ -102,6 +116,21 @@ export default function StudyPlan() {
       }
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+      const prompt = `You are an AI education assistant for FAMT Edu (Engineering College).
+Analyze class performance for ${filterClass === 'All' ? 'All Classes' : `Class ${filterClass}`}.
+
+Students Data:
+${JSON.stringify(statsSummary, null, 2)}
+
+Provide:
+1. Overall class strengths and weaknesses
+2. Subjects needing attention
+3. Comparison across students
+4. Recommendations for teachers
+5. Action items for improvement
+
+Use markdown formatting.`;
 
       const result = await model.generateContent(prompt);
       const reportText = result.response.text();
