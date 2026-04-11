@@ -1,0 +1,233 @@
+export const students = [
+  {
+    id: '1',
+    name: 'Arjun Mehta',
+    rollNo: '101',
+    class: 'SE',
+    section: 'A',
+    gender: 'Male',
+    avatar: 'AM',
+    attendance: 92,
+    marks: { mathematics: 85, physics: 78, chemistry: 92, basic_electrical: 88, programming: 95 },
+    behaviorScore: 88,
+    feeStatus: 'Paid',
+    grade: 'A',
+    status: 'Active',
+    parentName: 'Rajesh Mehta',
+    contact: '+91 98765 43210',
+    address: '123, Skyline Apartments, Mumbai',
+    dob: '2006-05-15'
+  },
+  {
+    id: '2',
+    name: 'Riya Shah',
+    rollNo: '102',
+    class: 'SE',
+    section: 'A',
+    gender: 'Female',
+    avatar: 'RS',
+    attendance: 72,
+    marks: { mathematics: 45, physics: 52, chemistry: 65, basic_electrical: 58, programming: 60 },
+    behaviorScore: 65,
+    feeStatus: 'Overdue',
+    grade: 'C',
+    status: 'Active',
+    parentName: 'Sanjay Shah',
+    contact: '+91 98765 43211',
+    address: '45, Green Valley, Mumbai',
+    dob: '2006-08-22'
+  },
+  {
+    id: '3',
+    name: 'Ishaan Verma',
+    rollNo: '103',
+    class: 'SE',
+    section: 'A',
+    gender: 'Male',
+    avatar: 'IV',
+    attendance: 95,
+    marks: { mathematics: 98, physics: 96, chemistry: 88, basic_electrical: 82, programming: 99 },
+    behaviorScore: 94,
+    feeStatus: 'Paid',
+    grade: 'A+',
+    status: 'Active',
+    parentName: 'Vikram Verma',
+    contact: '+91 98765 43212',
+    address: '78, Ocean View, Mumbai',
+    dob: '2006-02-10'
+  },
+  {
+    id: '4',
+    name: 'Ananya Iyer',
+    rollNo: '104',
+    class: 'SE',
+    section: 'A',
+    gender: 'Female',
+    avatar: 'AI',
+    attendance: 88,
+    marks: { mathematics: 72, physics: 85, chemistry: 95, basic_electrical: 90, programming: 82 },
+    behaviorScore: 91,
+    feeStatus: 'Paid',
+    grade: 'A',
+    status: 'Active',
+    parentName: 'Suresh Iyer',
+    contact: '+91 98765 43213',
+    address: '12, Temple Road, Mumbai',
+    dob: '2006-11-30'
+  },
+  {
+    id: '5',
+    name: 'Kabir Singh',
+    rollNo: '105',
+    class: 'SE',
+    section: 'A',
+    gender: 'Male',
+    avatar: 'KS',
+    attendance: 65,
+    marks: { mathematics: 32, physics: 40, chemistry: 55, basic_electrical: 48, programming: 38 },
+    behaviorScore: 42,
+    feeStatus: 'Partial',
+    grade: 'F',
+    status: 'Active',
+    parentName: 'Harpreet Singh',
+    contact: '+91 98765 43214',
+    address: '56, Golden Estate, Mumbai',
+    dob: '2006-04-05'
+  },
+  {
+    id: '6',
+    name: 'Zoya Khan',
+    rollNo: '106',
+    class: 'SE',
+    section: 'B',
+    gender: 'Female',
+    avatar: 'ZK',
+    attendance: 90,
+    marks: { mathematics: 78, physics: 82, chemistry: 85, basic_electrical: 92, programming: 88 },
+    behaviorScore: 85,
+    feeStatus: 'Paid',
+    grade: 'A',
+    status: 'Active',
+    parentName: 'Ahmed Khan',
+    contact: '+91 98765 43215',
+    address: '89, Crescent Heights, Mumbai',
+    dob: '2006-09-12'
+  },
+  {
+    id: '7',
+    name: 'Rohan Das',
+    rollNo: '107',
+    class: 'SE',
+    section: 'B',
+    gender: 'Male',
+    avatar: 'RD',
+    attendance: 82,
+    marks: { mathematics: 65, physics: 68, chemistry: 72, basic_electrical: 75, programming: 70 },
+    behaviorScore: 78,
+    feeStatus: 'Paid',
+    grade: 'B',
+    status: 'Active',
+    parentName: 'Amit Das',
+    contact: '+91 98765 43216',
+    address: '34, River Side, Mumbai',
+    dob: '2006-01-25'
+  },
+  {
+    id: '8',
+    name: 'Sana Patil',
+    rollNo: '108',
+    class: 'SE',
+    section: 'B',
+    gender: 'Female',
+    avatar: 'SP',
+    attendance: 85,
+    marks: { mathematics: 88, physics: 90, chemistry: 82, basic_electrical: 85, programming: 92 },
+    behaviorScore: 89,
+    feeStatus: 'Paid',
+    grade: 'A',
+    status: 'Active',
+    parentName: 'Vijay Patil',
+    contact: '+91 98765 43217',
+    address: '23, Hill Top, Mumbai',
+    dob: '2006-06-18'
+  },
+  {
+    id: '9',
+    name: 'Aditya Joshi',
+    rollNo: '109',
+    class: 'SE',
+    section: 'B',
+    gender: 'Male',
+    avatar: 'AJ',
+    attendance: 78,
+    marks: { mathematics: 55, physics: 60, chemistry: 58, basic_electrical: 62, programming: 52 },
+    behaviorScore: 72,
+    feeStatus: 'Overdue',
+    grade: 'C',
+    status: 'Active',
+    parentName: 'Manoj Joshi',
+    contact: '+91 98765 43218',
+    address: '67, Park Avenue, Mumbai',
+    dob: '2006-12-05'
+  },
+  {
+    id: '10',
+    name: 'Meera Reddy',
+    rollNo: '110',
+    class: 'SE',
+    section: 'B',
+    gender: 'Female',
+    avatar: 'MR',
+    attendance: 94,
+    marks: { mathematics: 92, physics: 95, chemistry: 90, basic_electrical: 88, programming: 96 },
+    behaviorScore: 96,
+    feeStatus: 'Paid',
+    grade: 'A+',
+    status: 'Active',
+    parentName: 'Kiran Reddy',
+    contact: '+91 98765 43219',
+    address: '45, Lake View, Mumbai',
+    dob: '2006-03-28'
+  }
+];
+
+export const teachers = [
+  { id: 't1', name: 'Dr. Sharma', subject: 'Engineering Mathematics', avatar: 'DS' },
+  { id: 't2', name: 'Ms. Kapoor', subject: 'Engineering Physics', avatar: 'MK' },
+  { id: 't3', name: 'Mr. Wilson', subject: 'Engineering Chemistry', avatar: 'MW' },
+  { id: 't4', name: 'Mrs. Gupta', subject: 'Basic Electrical Engineering', avatar: 'MG' },
+  { id: 't5', name: 'Mr. Tech', subject: 'Programming Fundamentals', avatar: 'MT' }
+];
+
+export const books = [
+  { id: 'b1', title: 'Engineering Mathematics', author: 'Kreyszig', subject: 'Mathematics', status: 'Available', color: '#4F8EF7' },
+  { id: 'b2', title: 'Engineering Physics', author: 'H.C. Verma', subject: 'Physics', status: 'Issued', color: '#22C55E' },
+  { id: 'b3', title: 'Engineering Chemistry', author: 'Jain & Jain', subject: 'Chemistry', status: 'Available', color: '#F59E0B' },
+  { id: 'b4', title: 'Clean Code', author: 'Robert Martin', subject: 'Programming', status: 'Available', color: '#7C5CFC' },
+  { id: 'b5', title: 'Basic Electrical Engineering', author: 'V.N. Mittal', subject: 'Electrical', status: 'Issued', color: '#EF4444' }
+];
+
+export const assignments = [
+  { id: 'a1', title: 'Calculus Quiz', subject: 'Mathematics', class: 'FE-A', dueDate: '2026-04-10', status: 'Pending', submissions: '18/30', maxMarks: 50 },
+  { id: 'a2', title: 'Physics Lab', subject: 'Physics', class: 'FE-A', dueDate: '2026-04-05', status: 'Graded', submissions: '30/30', maxMarks: 20 },
+  { id: 'a3', title: 'Programming Assignment', subject: 'Programming', class: 'SE-B', dueDate: '2026-04-15', status: 'Submitted', submissions: '25/30', maxMarks: 100 },
+  { id: 'a4', title: 'Electrical Circuits', subject: 'Basic Electrical', class: 'FE-A', dueDate: '2026-04-02', status: 'Pending', submissions: '12/30', maxMarks: 50 }
+];
+
+export const notifications = [
+  { id: 'n1', type: 'Alert', title: 'Low Attendance', message: 'Riya Shah attendance below 75%', time: '2 hours ago', read: false },
+  { id: 'n2', type: 'Warning', title: 'Overdue Assignment', message: '3 assignments overdue in FE-A', time: '5 hours ago', read: false },
+  { id: 'n3', type: 'Info', title: 'Fee Reminder', message: 'Fee due for 5 students in SE-B', time: '1 day ago', read: true },
+  { id: 'n4', type: 'Alert', title: 'Behavior Drop', message: 'Kabir Singh behavior score dropped to 42', time: '2 days ago', read: false }
+];
+
+export const timetable = {
+  'SE-A': [
+    { day: 'Mon', slots: [{ time: '08:00', subject: 'Mathematics', teacher: 'Dr. Sharma' }, { time: '09:00', subject: 'Physics', teacher: 'Ms. Kapoor' }] },
+    { day: 'Tue', slots: [{ time: '08:00', subject: 'Chemistry', teacher: 'Mr. Wilson' }, { time: '09:00', subject: 'Basic Electrical', teacher: 'Mrs. Gupta' }] },
+    { day: 'Wed', slots: [{ time: '08:00', subject: 'Programming', teacher: 'Mr. Tech' }, { time: '09:00', subject: 'Mathematics', teacher: 'Dr. Sharma' }] },
+    { day: 'Thu', slots: [{ time: '08:00', subject: 'Physics', teacher: 'Ms. Kapoor' }, { time: '09:00', subject: 'Chemistry', teacher: 'Mr. Wilson' }] },
+    { day: 'Fri', slots: [{ time: '08:00', subject: 'Basic Electrical', teacher: 'Mrs. Gupta' }, { time: '09:00', subject: 'Programming', teacher: 'Mr. Tech' }] },
+    { day: 'Sat', slots: [{ time: '08:00', subject: 'Mathematics', teacher: 'Dr. Sharma' }, { time: '09:00', subject: 'Physics', teacher: 'Ms. Kapoor' }] }
+  ]
+};

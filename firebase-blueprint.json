@@ -1,0 +1,115 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user in the system (student or teacher)",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["student", "teacher"] },
+        "class": { "type": "string" },
+        "section": { "type": "string" },
+        "rollNo": { "type": "string" },
+        "avatar": { "type": "string" },
+        "attendance": { "type": "number" },
+        "marks": { "type": "object" },
+        "behaviorScore": { "type": "number" },
+        "feeStatus": { "type": "string", "enum": ["Paid", "Partial", "Overdue"] },
+        "contact": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "name", "email", "role"]
+    },
+    "Assignment": {
+      "title": "Assignment",
+      "description": "An assignment created by a teacher",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "subject": { "type": "string" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "description": { "type": "string" },
+        "submissions": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "subject", "dueDate"]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "description": "Daily attendance record for a class",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date" },
+        "classId": { "type": "string" },
+        "data": { "type": "array", "items": { "type": "object" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["date", "classId", "data"]
+    },
+    "StudyPlan": {
+      "title": "StudyPlan",
+      "description": "AI generated study plan for a student",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentId", "content"]
+    },
+    "BehaviorIncident": {
+      "title": "BehaviorIncident",
+      "description": "A behavior incident logged for a student",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "type": { "type": "string", "enum": ["Positive", "Negative"] },
+        "description": { "type": "string" },
+        "scoreChange": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentId", "type", "description", "scoreChange"]
+    },
+    "FeePayment": {
+      "title": "FeePayment",
+      "description": "A fee payment transaction",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "amount": { "type": "number" },
+        "method": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentId", "amount", "method"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "An in-app notification",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "message"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "User", "description": "User profiles" },
+    "/assignments/{assignmentId}": { "schema": "Assignment", "description": "Assignments" },
+    "/attendance/{attendanceId}": { "schema": "Attendance", "description": "Daily attendance records" },
+    "/studyPlans/{planId}": { "schema": "StudyPlan", "description": "AI study plans" },
+    "/behaviorIncidents/{incidentId}": { "schema": "BehaviorIncident", "description": "Behavior incidents" },
+    "/feePayments/{paymentId}": { "schema": "FeePayment", "description": "Fee payment history" },
+    "/notifications/{notificationId}": { "schema": "Notification", "description": "In-app notifications" },
+    "/books/{bookId}": { "schema": { "$ref": "Book" }, "description": "Library books" },
+    "/timetable/{classId}": { "schema": { "type": "object" }, "description": "Class timetables" }
+  }
+}

@@ -1,0 +1,183 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+:root {
+  --background: #0A0C10;
+  --surface: #111318;
+  --surface-elevated: #1A1D24;
+  --border: #2A2D35;
+  --primary: #4F8EF7;
+  --secondary: #7C5CFC;
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --text-primary: #F1F3F9;
+  --text-secondary: #8B90A0;
+  --text-muted: #4A4F5E;
+  --grid-color: rgba(255, 255, 255, 0.03);
+}
+
+.light {
+  --background: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-elevated: #F1F5F9;
+  --border: #E2E8F0;
+  --primary: #3B82F6;
+  --secondary: #6366F1;
+  --success: #16A34A;
+  --warning: #D97706;
+  --danger: #DC2626;
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #475569;
+  --grid-color: rgba(0, 0, 0, 0.05);
+}
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Instrument Serif", serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+}
+
+@layer base {
+  body {
+    @apply bg-background text-text-primary font-sans antialiased;
+    background-image: 
+      linear-gradient(var(--grid-color) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-text-primary;
+  }
+
+  * {
+    @apply border-border;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+  }
+
+  input, select, textarea, button {
+    @apply text-text-primary;
+    color: inherit;
+  }
+
+  ::placeholder {
+    @apply text-text-muted opacity-80;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-surface/60 backdrop-blur-xl border border-border;
+  }
+  
+  .glass-elevated {
+    @apply bg-surface-elevated/80 backdrop-blur-2xl border border-border;
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-linear-to-br from-primary to-secondary;
+  }
+
+  .btn-primary {
+    @apply bg-linear-to-br from-primary to-secondary text-white font-medium px-4 py-2 rounded-lg hover:shadow-[0_0_20px_rgba(79,142,247,0.3)] active:scale-95 transition-all;
+  }
+
+  .card-hover {
+    @apply hover:border-primary/30 hover:shadow-[0_0_30px_rgba(79,142,247,0.05)] transition-all;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-background;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-border rounded-full hover:bg-text-muted;
+}
+
+/* Recharts Customization */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: var(--border);
+  stroke-opacity: 0.5;
+}
+
+.recharts-text {
+  fill: var(--text-secondary) !important;
+  font-size: 12px;
+  font-family: var(--font-mono);
+}
+
+/* Mobile Responsive Utilities */
+@layer utilities {
+  .safe-area-inset {
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 640px) {
+  .glass {
+    @apply backdrop-blur-lg;
+  }
+
+  /* Ensure tables are scrollable on mobile */
+  .table-container {
+    @apply overflow-x-auto -mx-4 px-4;
+  }
+
+  /* Reduce padding on mobile cards */
+  .mobile-compact {
+    @apply p-4;
+  }
+
+  /* Full width buttons on mobile */
+  .mobile-full {
+    @apply w-full;
+  }
+}
+
+/* Prevent horizontal scroll on mobile */
+body {
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Touch feedback */
+button, a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Improve text readability on small screens */
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+}
