@@ -24,7 +24,9 @@ import { toast } from 'react-hot-toast';
 import Avatar from '../components/ui/Avatar';
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import Markdown from 'react-markdown';
+import Markdown from '../components/ui/Markdown';
+
+
 
 export default function StudyPlan() {
   const { students, theme, user, saveStudyPlan, studyPlans } = useAppStore();
@@ -482,7 +484,7 @@ Use markdown formatting.`;
                     <div className="flex items-center gap-3">
                       <Avatar 
                         src={student.avatar} 
-                        fallback={student.name.charAt(0)} 
+                        fallback={student.name?.charAt(0) || 'S'} 
                         size="xs"
                       />
                       <p className="text-sm font-bold group-hover:text-primary transition-colors">{student.name}</p>
@@ -585,28 +587,7 @@ Use markdown formatting.`;
                   "prose prose-sm max-w-none text-text-secondary leading-relaxed",
                   theme !== 'light' && "prose-invert"
                 )}>
-                  <Markdown
-                    components={{
-                      table: ({ children }) => (
-                        <table className="w-full border-collapse border border-border my-4 rounded-lg overflow-hidden">
-                          {children}
-                        </table>
-                      ),
-                      thead: ({ children }) => <thead className="bg-primary/10">{children}</thead>,
-                      tbody: ({ children }) => <tbody className="divide-y divide-border">{children}</tbody>,
-                      tr: ({ children }) => <tr className="border-b border-border hover:bg-surface-elevated/50">{children}</tr>,
-                      th: ({ children }) => (
-                        <th className="border border-border px-4 py-3 text-left text-xs font-bold text-text-primary bg-primary/5">
-                          {children}
-                        </th>
-                      ),
-                      td: ({ children }) => (
-                        <td className="border border-border px-4 py-3 text-sm text-text-secondary">
-                          {children}
-                        </td>
-                      ),
-                    }}
-                  >
+                  <Markdown>
                     {classReport ? classReport.content : selectedPlan.content}
                   </Markdown>
                 </div>

@@ -53,8 +53,8 @@ export default function Marks() {
     const matchesSearch = (s.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
                          (s.rollNo || '').toString().includes(searchQuery);
     // For teachers: show all students (no user filter)
-    // For students: show only their own data
-    const matchesUser = isTeacher ? true : s.uid === user?.uid;
+    // For students: show only their own data (by UID or Email)
+    const matchesUser = isTeacher ? true : (s.uid === user?.uid || (user?.email && s.email === user.email));
     return matchesClass && matchesSection && matchesSearch && matchesUser;
   });
 
@@ -367,7 +367,7 @@ export default function Marks() {
                       <div className="flex items-center gap-3">
                         <Avatar 
                           src={student.avatar} 
-                          fallback={student.name.charAt(0)} 
+                          fallback={student.name?.charAt(0) || 'S'} 
                           size="xs"
                         />
                         <div>

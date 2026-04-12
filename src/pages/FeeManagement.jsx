@@ -335,7 +335,7 @@ export default function FeeManagement() {
                     <div className="flex items-center gap-3">
                       <Avatar 
                         src={student.avatar} 
-                        fallback={student.name.charAt(0)} 
+                        fallback={student.name?.charAt(0) || 'S'} 
                         size="xs"
                       />
                       <p className="text-sm font-bold group-hover:text-primary transition-colors text-text-primary">{student.name}</p>

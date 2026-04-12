@@ -33,3 +33,26 @@ export const downloadCSV = (data: any[], filename: string) => {
 export const cn = (...classes: any[]) => {
   return classes.filter(Boolean).join(' ');
 };
+export const calculateTotalMarks = (marks: any) => {
+  if (!marks) return 0;
+  return Object.values(marks).reduce((total: number, examMarks: any) => {
+    if (typeof examMarks === 'number') return total + examMarks;
+    if (typeof examMarks === 'object' && examMarks !== null) {
+      return total + Object.values(examMarks).reduce((subTotal: number, score: any) => subTotal + (Number(score) || 0), 0);
+    }
+    return total;
+  }, 0);
+};
+
+export const getConsolidatedMarks = (marks: any) => {
+  if (!marks) return {};
+  const consolidated: Record<string, number> = {};
+  Object.values(marks).forEach((examMarks: any) => {
+    if (typeof examMarks === 'object' && examMarks !== null) {
+      Object.entries(examMarks).forEach(([subject, score]) => {
+        consolidated[subject] = (consolidated[subject] || 0) + (Number(score) || 0);
+      });
+    }
+  });
+  return consolidated;
+};

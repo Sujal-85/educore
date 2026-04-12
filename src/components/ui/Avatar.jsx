@@ -2,7 +2,7 @@ import React from 'react';
 import { clsx } from 'clsx';
 
 export default function Avatar({ src, fallback, className, size = "md" }) {
-  const isUrl = typeof src === 'string' && (src.startsWith('http') || src.startsWith('https'));
+  const isUrl = typeof src === 'string' && (src.startsWith('http') || src.startsWith('https') || src.startsWith('data:image/'));
 
   const sizeClasses = {
     xs: "w-8 h-8 text-xs rounded-lg",

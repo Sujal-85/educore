@@ -70,6 +70,8 @@ export const generateEmailFromTemplate = (templateKey, context = {}) => {
   return template(context);
 };
 
+import { useAppStore } from '../store/useAppStore';
+
 export const sendEmailDraft = ({ to, cc, templateKey, context = {} }) => {
   const recipient = (to || '').trim();
   if (!recipient) {
@@ -77,14 +79,16 @@ export const sendEmailDraft = ({ to, cc, templateKey, context = {} }) => {
   }
 
   const { subject, body } = generateEmailFromTemplate(templateKey, context);
-  const query = new URLSearchParams();
-  query.set('subject', subject);
-  query.set('body', body);
-  if (cc) {
-    query.set('cc', cc);
-  }
-
-  window.location.href = `mailto:${recipient}?${query.toString()}`;
+  
+  // Use store to open in-app composer
+  useAppStore.getState().setEmailDraft({
+    to: recipient,
+    cc,
+    subject,
+    body,
+    templateKey,
+    context
+  });
 };
 
 export const EMAIL_TEMPLATE_CATALOG = [

@@ -4,17 +4,17 @@ import { useAppStore } from '../store/useAppStore';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import Avatar from '../components/ui/Avatar';
+import { db, collection, query, where, getDocs } from '../lib/firebase';
 
 export default function Profile() {
   const { user, updateUser, students } = useAppStore();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: user?.name || '',
     email: user?.email || '',
-    phone: user?.phone || '',
+    mobile: user?.phone || user?.mobile || '',
     parentName: user?.parentName || '',
     parentEmail: user?.parentEmail || '',
-    parentPhone: user?.parentPhone || '',
+    parentPhone: user?.parentPhone || user?.parentContact || '',
     class: user?.class || '',
     section: user?.section || '',
     rollNo: user?.rollNo || '',
@@ -27,10 +27,10 @@ export default function Profile() {
       setFormData({
         name: user.name || '',
         email: user.email || '',
-        phone: user.phone || '',
+        mobile: user.phone || user.mobile || '',
         parentName: user.parentName || '',
         parentEmail: user.parentEmail || '',
-        parentPhone: user.parentPhone || '',
+        parentPhone: user.parentPhone || user.parentContact || '',
         class: user.class || '',
         section: user.section || '',
         rollNo: user.rollNo || '',
@@ -128,7 +128,7 @@ export default function Profile() {
     // Personal Info
     if (!formData.name?.trim()) errors.push('Full Name is required');
     if (!formData.email?.trim()) errors.push('Email is required');
-    if (!formData.phone?.trim()) errors.push('Phone is required');
+    if (!formData.mobile?.trim()) errors.push('Mobile number is required');
 
     // Parent Info (required for students)
     if (user?.role?.toLowerCase() === 'student') {
@@ -155,8 +155,8 @@ export default function Profile() {
 
     // Phone validation (10 digits)
     const phoneRegex = /^\d{10}$/;
-    if (formData.phone && !phoneRegex.test(formData.phone.replace(/\D/g, ''))) {
-      errors.push('Phone number must be 10 digits');
+    if (formData.mobile && !phoneRegex.test(formData.mobile.replace(/\D/g, ''))) {
+      errors.push('Mobile number must be 10 digits');
     }
     if (user?.role?.toLowerCase() === 'student' && formData.parentPhone && !phoneRegex.test(formData.parentPhone.replace(/\D/g, ''))) {
       errors.push('Parent phone number must be 10 digits');
@@ -179,6 +179,24 @@ export default function Profile() {
         toast.error('User ID not found');
         return;
       }
+
+      // Check for duplicate phone number
+      const mobileQueries = [
+        query(collection(db, 'users'), where('mobile', '==', formData.mobile)),
+        query(collection(db, 'users'), where('phone', '==', formData.mobile)),
+        query(collection(db, 'users'), where('contact', '==', formData.mobile))
+      ];
+      
+      const querySnapshots = await Promise.all(mobileQueries.map(q => getDocs(q)));
+      const isDuplicate = querySnapshots.some(snap => 
+        snap.docs.some(doc => doc.id !== userId)
+      );
+      
+      if (isDuplicate) {
+        toast.error('This phone number is already linked to another account.');
+        return;
+      }
+
       await updateUser(userId, formData);
       toast.success('Profile updated successfully');
       setIsEditing(false);
@@ -192,7 +210,7 @@ export default function Profile() {
     setFormData({
       name: user?.name || '',
       email: user?.email || '',
-      phone: user?.phone || '',
+      mobile: user?.phone || user?.mobile || '',
       parentName: user?.parentName || '',
       parentEmail: user?.parentEmail || '',
       parentPhone: user?.parentPhone || '',
@@ -342,14 +360,14 @@ export default function Profile() {
               {isEditing ? (
                 <input
                   type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  value={formData.mobile}
+                  onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
                   className="w-full bg-surface-elevated border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-primary/50 outline-none"
                 />
               ) : (
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-elevated border border-border">
                   <Phone className="w-4 h-4 text-text-muted" />
-                  <span className="text-text-primary">{user?.phone || user?.contact || 'Not set'}</span>
+                  <span className="text-text-primary">{user?.phone || user?.mobile || 'Not set'}</span>
                 </div>
               )}
             </div>
