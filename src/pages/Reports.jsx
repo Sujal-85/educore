@@ -19,6 +19,7 @@ import {
   Sparkles,
   X
 } from 'lucide-react';
+import { calculateTotalMarks, getConsolidatedMarks } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
 import { toast } from 'react-hot-toast';
@@ -119,15 +120,19 @@ export default function Reports() {
     }
 
     if (reportType === 'progress' || reportType === 'class') {
-      tableHeaders = [['Student Name', 'ID', 'Math', 'Science', 'English', 'Attendance']];
-      tableData = filteredStudents.map(s => [
-        s.name,
-        s.studentId || 'N/A',
-        s.marks?.math || 0,
-        s.marks?.science || 0,
-        s.marks?.english || 0,
-        `${s.attendance || 0}%`
-      ]);
+      tableHeaders = [['Student Name', 'ID', 'Math', 'Science', 'English', 'Total Marks', 'Attendance']];
+      tableData = filteredStudents.map(s => {
+        const consolidated = getConsolidatedMarks(s.marks);
+        return [
+          s.name,
+          s.studentId || 'N/A',
+          consolidated.math || consolidated.mathematics || 0,
+          consolidated.science || consolidated.physics || 0,
+          consolidated.english || consolidated.chemistry || 0,
+          calculateTotalMarks(s.marks),
+          `${s.attendance || 0}%`
+        ];
+      });
     } else if (reportType === 'attendance') {
       tableHeaders = [['Student Name', 'ID', 'Attendance %', 'Status']];
       tableData = filteredStudents.map(s => [

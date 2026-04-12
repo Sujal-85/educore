@@ -22,6 +22,7 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { toast } from 'react-hot-toast';
 import Avatar from '../components/ui/Avatar';
+import { db, collection, query, where, getDocs } from '../lib/firebase';
 
 const settingSections = [
   { id: 'profile', name: 'Profile Settings', icon: User, desc: 'Manage your personal information and public profile.' },
@@ -31,21 +32,66 @@ const settingSections = [
 ];
 
 export default function Settings() {
-  const { user, updateStudent, theme, setTheme } = useAppStore();
+  const { user, updateUser, theme, setTheme } = useAppStore();
   const [activeTab, setActiveTab] = useState('profile');
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    contact: user?.contact || '',
+    mobile: user?.mobile || user?.contact || '',
     language: 'English (US)'
   });
 
+  // Sync formData with user
+  React.useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        email: user.email || '',
+        mobile: user.contact || user.mobile || user.phone || '',
+        language: formData.language || 'English (US)'
+      });
+    }
+  }, [user]);
+
   const handleSave = async () => {
     try {
-      await updateStudent(user.id, formData);
+      // Check for duplicate phone number
+      const mobileQueries = [
+        query(collection(db, 'users'), where('mobile', '==', formData.mobile)),
+        query(collection(db, 'users'), where('phone', '==', formData.mobile)),
+        query(collection(db, 'users'), where('contact', '==', formData.mobile))
+      ];
+      
+      const querySnapshots = await Promise.all(mobileQueries.map(q => getDocs(q)));
+      const isDuplicate = querySnapshots.some(snap => 
+        snap.docs.some(doc => doc.id !== user.uid && doc.id !== user.id)
+      );
+      
+      if (isDuplicate) {
+        toast.error('This phone number is already linked to another account.');
+        return;
+      }
+
+      await updateUser(user.uid || user.id, formData);
       toast.success('Profile updated successfully');
     } catch (error) {
       toast.error('Failed to update profile');
+    }
+  };
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 1024 * 1024) {
+        toast.error('File too large (max 1MB)');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, avatar: reader.result }));
+        updateUser(user.uid || user.id, { ...formData, avatar: reader.result });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -99,13 +145,23 @@ export default function Settings() {
               <div className="flex flex-col sm:flex-row items-center gap-8 pb-8 border-b border-border">
                 <div className="relative group">
                   <Avatar 
-                    src={user?.avatar} 
+                    src={formData.avatar || user?.avatar} 
                     fallback={user?.name?.charAt(0) || 'U'} 
                     size="xl" 
                   />
-                  <button className="absolute -bottom-2 -right-2 p-2 rounded-xl bg-surface-elevated border border-border text-text-muted hover:text-text-primary transition-all shadow-lg">
+                  <input
+                    type="file"
+                    id="settings-avatar-upload"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                  />
+                  <label 
+                    htmlFor="settings-avatar-upload"
+                    className="absolute -bottom-2 -right-2 p-2 rounded-xl bg-surface-elevated border border-border text-text-muted hover:text-text-primary transition-all shadow-lg cursor-pointer active:scale-95"
+                  >
                     <Edit3 className="w-4 h-4" />
-                  </button>
+                  </label>
                 </div>
                 <div className="text-center sm:text-left">
                   <h3 className="text-xl font-bold mb-1 text-text-primary">{user?.name}</h3>
@@ -145,8 +201,8 @@ export default function Settings() {
                   <div className="relative">
                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                     <input 
-                      value={formData.contact} 
-                      onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                      value={formData.mobile} 
+                      onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
                       className="w-full bg-surface border border-border rounded-xl pl-12 pr-4 py-3 text-sm focus:outline-none focus:border-primary/50 text-text-primary" 
                     />
                   </div>

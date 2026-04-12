@@ -41,7 +41,8 @@ import { toast } from 'react-hot-toast';
 import { clsx } from 'clsx';
 import Avatar from '../components/ui/Avatar';
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import ReactMarkdown from 'react-markdown';
+import Markdown from '../components/ui/Markdown';
+
 
 const tabs = [
   { id: 'overview', name: 'Overview', icon: User },
@@ -53,12 +54,12 @@ const tabs = [
 
 
 
-import { downloadCSV } from '../lib/utils';
+import { downloadCSV, getConsolidatedMarks } from '../lib/utils';
 
 export default function StudentProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { students, theme } = useAppStore();
+  const { students, user, setEmailDraft } = useAppStore();
   const [activeTab, setActiveTab] = useState('overview');
   const [isGenerating, setIsGenerating] = useState(false);
   const [studyPlan, setStudyPlan] = useState(null);
@@ -114,7 +115,7 @@ export default function StudentProfile() {
       Section: student.section,
       Attendance: student.attendance,
       GPA: student.grade,
-      Contact: student.contact,
+      Contact: student.mobile || student.contact || student.phone || 'N/A',
       ParentName: student.parentName,
       Address: student.address
     }];
@@ -122,23 +123,29 @@ export default function StudentProfile() {
   };
 
   const handleEmail = () => {
-    window.location.href = `mailto:parent@example.com?subject=Regarding ${student.name}`;
+    setEmailDraft({
+      to: 'parent@example.com',
+      subject: `Regarding ${student.name}`,
+      body: `Dear Parent/Guardian,\n\nI am reaching out regarding ${student.name}'s progress.\n\nAttendance: ${student.attendance}%\nGrade: ${student.grade}\n\nPlease let me know if you would like to discuss this further.\n\nRegards,\n${user?.name || 'Teacher'}`
+    });
   };
 
   const handleCall = () => {
-    window.location.href = `tel:${student.contact}`;
+    window.location.href = `tel:${student.mobile || student.contact || student.phone}`;
   };
 
   const handleViewDocs = () => {
     toast.success('Opening document vault...');
   };
 
+  const consolidatedMarks = getConsolidatedMarks(student.marks);
+
   const radarData = [
-    { subject: 'Math', A: student.marks.math, fullMark: 100 },
-    { subject: 'Science', A: student.marks.science, fullMark: 100 },
-    { subject: 'English', A: student.marks.english, fullMark: 100 },
-    { subject: 'History', A: student.marks.history, fullMark: 100 },
-    { subject: 'Computer', A: student.marks.computer, fullMark: 100 },
+    { subject: 'Math', A: consolidatedMarks.math || consolidatedMarks.mathematics || 0, fullMark: 100 },
+    { subject: 'Science', A: consolidatedMarks.science || consolidatedMarks.physics || 0, fullMark: 100 },
+    { subject: 'English', A: consolidatedMarks.english || consolidatedMarks.chemistry || 0, fullMark: 100 },
+    { subject: 'History', A: consolidatedMarks.history || consolidatedMarks.basic_electrical || 0, fullMark: 100 },
+    { subject: 'Computer', A: consolidatedMarks.computer || consolidatedMarks.programming || 0, fullMark: 100 },
   ];
 
   const attendanceTrend = [
@@ -181,7 +188,7 @@ export default function StudentProfile() {
           <div className="relative">
             <Avatar 
               src={student.avatar} 
-              fallback={student.name.charAt(0)} 
+              fallback={student.name?.charAt(0) || 'S'} 
               size="2xl" 
             />
             <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-surface-elevated border-4 border-background rounded-2xl flex items-center justify-center">
@@ -271,7 +278,7 @@ export default function StudentProfile() {
                       <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Phone Number</p>
                       <p className="text-sm font-medium flex items-center gap-2 text-text-primary">
                         <Phone className="w-3.5 h-3.5 text-text-muted" />
-                        {student.contact}
+                        {student.mobile || student.contact || student.phone || 'N/A'}
                       </p>
                     </div>
                     <div className="sm:col-span-2 space-y-1">
@@ -300,7 +307,7 @@ export default function StudentProfile() {
                     </div>
                     <div className="space-y-1">
                       <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Emergency Contact</p>
-                      <p className="text-sm font-medium text-danger">{student.contact}</p>
+                      <p className="text-sm font-medium text-danger">{student.mobile || student.contact || student.phone || 'N/A'}</p>
                     </div>
                   </div>
                 </div>
@@ -367,10 +374,10 @@ export default function StudentProfile() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {Object.entries(student.marks).map(([subject, score]) => (
+                      {Object.entries(consolidatedMarks).map(([subject, score]) => (
                         <tr key={subject} className="group">
-                          <td className="py-4 text-sm font-bold capitalize group-hover:text-primary transition-colors text-text-primary">{subject}</td>
-                          <td className="py-4 text-sm font-mono font-bold text-text-primary">{score}/100</td>
+                          <td className="py-4 text-sm font-bold capitalize group-hover:text-primary transition-colors text-text-primary">{subject.replace('_', ' ')}</td>
+                          <td className="py-4 text-sm font-mono font-bold text-text-primary">{score}</td>
                           <td className="py-4">
                             <span className={clsx(
                               "px-2 py-1 rounded-lg text-[10px] font-bold",
@@ -649,7 +656,7 @@ export default function StudentProfile() {
                             "text-xs text-text-secondary leading-relaxed prose max-w-none",
                             theme !== 'light' && "prose-invert"
                           )}>
-                            <ReactMarkdown>{studyPlan.behavioralAdvice}</ReactMarkdown>
+                            <Markdown>{studyPlan.behavioralAdvice}</Markdown>
                           </div>
                         </div>
                       </div>

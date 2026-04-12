@@ -43,6 +43,7 @@ export const useAppStore = create((set, get) => ({
   user: null,
   authLoading: true,
   unsubs: [],
+  emailDraft: null, // { to, cc, subject, body, templateKey, context }
   
   setTheme: (theme) => {
     localStorage.setItem('theme', theme);
@@ -68,6 +69,8 @@ export const useAppStore = create((set, get) => ({
   
   setIsMobile: (isMobile) => set({ isMobile }),
   
+  setEmailDraft: (draft) => set({ emailDraft: draft }),
+  
   initData: () => {
     const { user } = get();
     if (!user) return;
@@ -78,8 +81,27 @@ export const useAppStore = create((set, get) => ({
     const unsubscribeUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
       const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       console.log('Total users fetched:', usersData.length);
-      const studentsData = usersData.filter(u => u.role?.toLowerCase() === 'student');
-      const teachersData = usersData.filter(u => u.role?.toLowerCase() === 'teacher');
+      
+      // Filter students: must have role 'student' and NOT be a known teacher email
+      const studentsData = usersData.filter(u => {
+        const role = (u.role || '').toLowerCase();
+        const email = (u.email || '').toLowerCase();
+        const isTeacherEmail = email === 'khedekarsujay720@gmail.com' || 
+                               email === 'teacher@educore.edu' || 
+                               email.endsWith('@famt.ac.in');
+        return role === 'student' && !isTeacherEmail;
+      });
+
+      // Filter teachers: must have role 'teacher' OR be a known teacher email
+      const teachersData = usersData.filter(u => {
+        const role = (u.role || '').toLowerCase();
+        const email = (u.email || '').toLowerCase();
+        const isTeacherEmail = email === 'khedekarsujay720@gmail.com' || 
+                               email === 'teacher@educore.edu' || 
+                               email.endsWith('@famt.ac.in');
+        return role === 'teacher' || isTeacherEmail;
+      });
+
       console.log('Students:', studentsData.length, 'Teachers:', teachersData.length);
       set({ students: studentsData, teachers: teachersData });
     }, (error) => {
@@ -347,16 +369,16 @@ export const useAppStore = create((set, get) => ({
   addStudent: async (student) => {
     const path = 'users';
     try {
-      const newDoc = doc(collection(db, path));
+      const newDoc = student.uid ? doc(db, path, student.uid) : doc(collection(db, path));
       const studentData = { 
         ...student, 
         role: 'student', 
-        uid: newDoc.id,
+        uid: student.uid || newDoc.id,
         createdAt: new Date().toISOString(),
         marks: student.marks || {
-          'Mid-Term': { math: 0, science: 0, english: 0, history: 0, computer: 0 },
-          'Final': { math: 0, science: 0, english: 0, history: 0, computer: 0 },
-          'Unit Test': { math: 0, science: 0, english: 0, history: 0, computer: 0 }
+          'Unit Test 1': { mathematics: 0, physics: 0, chemistry: 0, basic_electrical: 0, programming: 0 },
+          'Unit Test 2': { mathematics: 0, physics: 0, chemistry: 0, basic_electrical: 0, programming: 0 },
+          'Final': { mathematics: 0, physics: 0, chemistry: 0, basic_electrical: 0, programming: 0 }
         }
       };
       await setDoc(newDoc, studentData);
@@ -368,7 +390,16 @@ export const useAppStore = create((set, get) => ({
   updateStudent: async (id, updatedData) => {
     const path = `users/${id}`;
     try {
+      if (updatedData.avatar && updatedData.avatar.startsWith('data:image/')) {
+        localStorage.setItem(`avatar_${id}`, updatedData.avatar);
+      }
       await updateDoc(doc(db, 'users', id), updatedData);
+      
+      // Update local user state if it's the current user
+      const currentUser = get().user;
+      if (currentUser && (currentUser.id === id || currentUser.uid === id)) {
+        set({ user: { ...currentUser, ...updatedData } });
+      }
       toast.success('Student updated');
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, path);
@@ -382,6 +413,9 @@ export const useAppStore = create((set, get) => ({
     }
     const path = `users/${userId}`;
     try {
+      if (updatedData.avatar && updatedData.avatar.startsWith('data:image/')) {
+        localStorage.setItem(`avatar_${userId}`, updatedData.avatar);
+      }
       await setDoc(doc(db, path), updatedData, { merge: true });
       // Update local user state
       const currentUser = get().user;

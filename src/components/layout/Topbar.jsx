@@ -9,7 +9,16 @@ import { toast } from 'react-hot-toast';
 import Avatar from '../ui/Avatar';
 
 export default function Topbar() {
-  const { user, notifications, markNotificationAsRead, mobileMenuOpen, setMobileMenuOpen } = useAppStore();
+  const { 
+    user, 
+    notifications, 
+    markNotificationAsRead, 
+    mobileMenuOpen, 
+    setMobileMenuOpen,
+    students,
+    teachers
+  } = useAppStore();
+  
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const navigate = useNavigate();
@@ -20,6 +29,34 @@ export default function Topbar() {
   const notificationRef = useRef(null);
 
   const recentNotifications = notifications.slice(0, 5);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const searchRef = useRef(null);
+
+  const pages = [
+    { title: 'School Dashboard', path: '/dashboard', category: 'Module' },
+    { title: 'Attendance Tracking', path: '/attendance', category: 'Module' },
+    { title: 'Academic Marks', path: '/marks', category: 'Module' },
+    { title: 'AI Study Planner', path: '/study-plan', category: 'Module' },
+    { title: 'Class Assignments', path: '/assignments', category: 'Module' },
+    { title: 'Digital Library', path: '/library', category: 'Module' },
+    { title: 'Weekly Timetable', path: '/timetable', category: 'Module' },
+    { title: 'Performance Reports', path: '/reports', category: 'Module' },
+    { title: 'Account Profile', path: '/profile', category: 'System' },
+    { title: 'System Preferences', path: '/settings', category: 'System' },
+  ];
+
+  const searchResults = searchQuery.trim() ? [
+    ...pages.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase())),
+    ...(user?.role?.toLowerCase() === 'teacher' ? [
+      ...(students || []).filter(s => 
+        (s.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (s.studentId || '').toLowerCase().includes(searchQuery.toLowerCase())
+      ).map(s => ({ title: s.name, path: `/profile/${s.id || s.uid}`, category: 'Student', sub: s.studentId })),
+      ...(teachers || []).filter(t => 
+        (t.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+      ).map(t => ({ title: t.name, path: `/profile/${t.id || t.uid}`, category: 'Teacher' }))
+    ] : [])
+  ].slice(0, 8) : [];
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -30,6 +67,9 @@ export default function Topbar() {
       if (notificationRef.current && !notificationRef.current.contains(event.target)) {
         setShowNotifications(false);
       }
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSearchResults(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -39,6 +79,9 @@ export default function Topbar() {
   const handleSignOut = async () => {
     try {
       await signOut(auth);
+      // Clean up local storage
+      localStorage.removeItem('user_avatar');
+      localStorage.removeItem('user_avatar_timestamp');
       toast.success('Signed out successfully');
     } catch (error) {
       toast.error('Failed to sign out');
@@ -79,20 +122,68 @@ export default function Topbar() {
         )}
 
         {/* Search Bar */}
-        <div className="relative group max-w-md w-full">
+        <div className="relative group max-w-md w-full" ref={searchRef}>
           <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted group-focus-within:text-primary transition-colors" />
           <input
             id="global-search"
             type="text"
-            placeholder="Search..."
+            placeholder="Search students, modules, files..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowSearchResults(true);
+            }}
+            onFocus={() => setShowSearchResults(true)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && searchResults.length > 0) {
+                navigate(searchResults[0].path);
+                setShowSearchResults(false);
+                setSearchQuery('');
+              }
+            }}
             className="w-full bg-surface border border-border rounded-xl pl-9 sm:pl-12 pr-8 sm:pr-12 py-2 sm:py-2.5 text-sm focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-text-muted/50 text-text-primary"
           />
           <div className="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 items-center gap-1 px-1.5 py-0.5 bg-surface border border-border rounded-md text-[10px] font-mono text-text-muted">
             <Command className="w-2.5 h-2.5" />
             <span>K</span>
           </div>
+
+          <AnimatePresence>
+            {showSearchResults && searchResults.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                className="absolute left-0 top-full mt-2 w-full glass-elevated rounded-2xl border border-border shadow-2xl overflow-hidden z-50 p-2"
+              >
+                <div className="text-[10px] font-bold text-text-muted uppercase tracking-widest px-3 py-2">Quick results</div>
+                {searchResults.map((result, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      navigate(result.path);
+                      setShowSearchResults(false);
+                      setSearchQuery('');
+                    }}
+                    className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-elevated transition-all group/item text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover/item:bg-primary group-hover/item:text-white transition-all">
+                        <Search className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-text-primary group-hover/item:text-primary transition-colors">{result.title}</p>
+                        {result.sub && <p className="text-[10px] text-text-muted">{result.sub}</p>}
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-surface border border-border text-text-muted group-hover/item:text-primary group-hover/item:border-primary/20 transition-all">
+                      {result.category}
+                    </span>
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 

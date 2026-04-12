@@ -20,8 +20,12 @@ import { clsx } from 'clsx';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { toast } from 'react-hot-toast';
 import Avatar from '../components/ui/Avatar';
-import Markdown from 'react-markdown';
+import Markdown from '../components/ui/Markdown';
+
+
 import { sendEmailDraft, EMAIL_TEMPLATE_KEYS } from '../lib/emailTemplates';
+import { calculateTotalMarks } from '../lib/utils';
+
 
 export default function TeacherPortal() {
   const { students, deleteStudent, updateStudent, addStudent, theme, seedDemoData } = useAppStore();
@@ -49,7 +53,7 @@ export default function TeacherPortal() {
     behaviorScore: 100,
     email: '',
     parentName: '',
-    contact: '',
+    mobile: '',
     rollNo: '',
     marks: {
       'Unit Test 1': { mathematics: 0, physics: 0, chemistry: 0, basic_electrical: 0, programming: 0 },
@@ -68,7 +72,7 @@ export default function TeacherPortal() {
       behaviorScore: 100,
       email: '',
       parentName: '',
-      contact: '',
+      mobile: '',
       rollNo: '',
       marks: {
         'Unit Test 1': { mathematics: 0, physics: 0, chemistry: 0, basic_electrical: 0, programming: 0 },
@@ -121,7 +125,7 @@ export default function TeacherPortal() {
       behaviorScore: student.behaviorScore || 100,
       email: student.email || '',
       parentName: student.parentName || '',
-      contact: student.contact || student.parentPhone || '',
+      mobile: student.mobile || student.contact || student.parentPhone || '',
       rollNo: student.rollNo || student.studentId || '',
       marks: student.marks || defaultMarks
     });
@@ -129,6 +133,15 @@ export default function TeacherPortal() {
   };
 
   const filteredStudents = students.filter(s => {
+    // Double-check role and email to prevent teacher/self from appearing
+    const role = (s.role || '').toLowerCase();
+    const email = (s.email || '').toLowerCase();
+    const isTeacherEmail = email === 'khedekarsujay720@gmail.com' || 
+                           email === 'teacher@educore.edu' || 
+                           email.endsWith('@famt.ac.in');
+    
+    if (role !== 'student' || isTeacherEmail) return false;
+
     const matchesSearch = (s.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
                          (s.studentId || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesClass = filterClass === 'All' || String(s.class) === filterClass;
@@ -242,118 +255,127 @@ export default function TeacherPortal() {
       </div>
 
       {/* Student List */}
-      <div className="grid grid-cols-1 gap-6">
-        {filteredStudents.map((student) => (
-          <motion.div 
-            key={student.id}
-            layout
-            className="glass p-6 rounded-[32px] border border-border hover:border-primary/20 transition-all group"
-          >
-            <div className="flex flex-col lg:flex-row gap-6">
-              {/* Profile Info */}
-              <div className="flex items-center gap-4 min-w-[240px]">
-                <Avatar 
-                  src={student.avatar} 
-                  fallback={student.name.charAt(0)} 
-                  size="lg" 
-                />
-                <div>
-                  <h3 className="text-lg font-bold group-hover:text-primary transition-colors text-text-primary">{student.name}</h3>
-                  <p className="text-sm text-text-muted">ID: {student.studentId || 'N/A'}</p>
-                  <p className="text-xs font-bold text-primary mt-1 uppercase tracking-widest">Class {student.class}-{student.section}</p>
-                </div>
-              </div>
-
-              {/* Stats */}
-              <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="p-3 rounded-2xl bg-surface-elevated border border-border">
-                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">Attendance</p>
-                  <div className="flex items-center gap-2">
-                    <span className={clsx("text-lg font-bold font-mono", student.attendance > 85 ? "text-success" : "text-warning")}>
-                      {student.attendance}%
+      {/* Student Table */}
+      <div className="glass rounded-[32px] border border-border overflow-hidden shadow-2xl">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-border bg-surface-elevated/50">
+                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest">Student</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest text-center">Class</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest text-center">Attendance</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest text-center">Marks</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {filteredStudents.map((student) => (
+                <motion.tr 
+                  key={student.id}
+                  layout
+                  className="hover:bg-surface-elevated/30 transition-colors group"
+                >
+                  <td className="px-6 py-4 min-w-[200px]">
+                    <div className="flex items-center gap-3">
+                      <Avatar src={student.avatar} fallback={student.name?.charAt(0) || 'S'} size="sm" />
+                      <div>
+                        <p className="font-bold text-text-primary text-sm line-clamp-1">{student.name}</p>
+                        <p className="text-[10px] text-text-muted font-mono">{student.studentId || student.rollNo || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">
+                      {student.class}-{student.section}
                     </span>
-                    {student.attendance > 90 ? <TrendingUp className="w-4 h-4 text-success" /> : <TrendingDown className="w-4 h-4 text-warning" />}
-                  </div>
-                </div>
-                <div className="p-3 rounded-2xl bg-surface-elevated border border-border">
-                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">Behavior</p>
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold font-mono text-primary">{student.behaviorScore}</span>
-                    <AlertCircle className="w-4 h-4 text-primary" />
-                  </div>
-                </div>
-                <div className="p-3 rounded-2xl bg-surface-elevated border border-border">
-                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">Grade</p>
-                  <span className="text-lg font-bold font-mono text-secondary">{student.grade || 'A'}</span>
-                </div>
-                <div className="p-3 rounded-2xl bg-surface-elevated border border-border">
-                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">Marks</p>
-                  <span className="text-lg font-bold font-mono text-text-primary">
-                    {Object.values(student.marks || {}).reduce((a, b) => a + b, 0)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-2 lg:flex-col lg:justify-center">
-                <button 
-                  onClick={() => handleAnalyzeBehavior(student)}
-                  disabled={analyzingId === student.id}
-                  className="flex-1 lg:w-full p-2.5 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-all flex items-center justify-center gap-2 text-xs font-bold disabled:opacity-50"
-                >
-                  {analyzingId === student.id ? <Sparkles className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                  AI Analyze
-                </button>
-                <button 
-                  onClick={() => handleSendReport(student)}
-                  className="flex-1 lg:w-full p-2.5 rounded-xl bg-secondary/10 text-secondary hover:bg-secondary/20 transition-all flex items-center justify-center gap-2 text-xs font-bold"
-                >
-                  <Mail className="w-4 h-4" />
-                  Notify Parents
-                </button>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => handleEdit(student)}
-                    className="p-2.5 rounded-xl hover:bg-surface-elevated text-text-muted hover:text-text-primary transition-all"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button 
-                    onClick={() => deleteStudent(student.id)}
-                    className="p-2.5 rounded-xl hover:bg-danger/10 text-text-muted hover:text-danger transition-all"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* AI Analysis Result */}
-            <AnimatePresence>
-              {analysisResult?.id === student.id && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="mt-6 pt-6 border-t border-border"
-                >
-                  <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
-                    <div className="flex items-center gap-2 mb-2 text-primary">
-                      <Sparkles className="w-4 h-4" />
-                      <span className="text-xs font-bold uppercase tracking-widest">AI Behavior Analysis</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col items-center gap-1 min-w-[100px]">
+                      <span className={clsx("text-xs font-bold font-mono", student.attendance > 85 ? "text-success" : "text-warning")}>
+                        {student.attendance}%
+                      </span>
+                      <div className="w-full h-1 bg-border rounded-full overflow-hidden">
+                        <div 
+                          className={clsx(
+                            "h-full transition-all duration-1000",
+                            student.attendance >= 90 ? "bg-green-500" :
+                            student.attendance >= 75 ? "bg-yellow-500" : "bg-red-500"
+                          )}
+                          style={{ width: `${student.attendance}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className={clsx(
-                      "text-sm text-text-secondary leading-relaxed prose prose-sm max-w-none",
-                      theme !== 'light' && "prose-invert"
-                    )}>
-                      <Markdown>{analysisResult.text}</Markdown>
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <div className="flex flex-col items-center">
+                      <span className="text-sm font-bold font-mono text-text-primary">
+                        {calculateTotalMarks(student.marks)}
+                      </span>
+                      <span className="text-[10px] text-text-muted uppercase tracking-widest">Total</span>
                     </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        ))}
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2 shrink-0">
+                      <button 
+                        onClick={() => handleAnalyzeBehavior(student)}
+                        disabled={analyzingId === student.id}
+                        className="p-2 rounded-lg hover:bg-primary/10 text-primary transition-all disabled:opacity-50"
+                        title="AI Analysis"
+                      >
+                        <Sparkles className={clsx("w-4 h-4", analyzingId === student.id && "animate-spin")} />
+                      </button>
+                      <button 
+                        onClick={() => handleSendReport(student)}
+                        className="p-2 rounded-lg hover:bg-secondary/10 text-secondary transition-all"
+                        title="Notify Parents"
+                      >
+                        <Mail className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleEdit(student)}
+                        className="p-2 rounded-lg hover:bg-blue-500/10 text-text-muted hover:text-blue-500 transition-all"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => deleteStudent(student.id)}
+                        className="p-2 rounded-lg hover:bg-danger/10 text-text-muted hover:text-danger transition-all"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        {/* Analysis Result (Table Extension) */}
+        <AnimatePresence>
+          {analysisResult && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="border-t border-border bg-primary/5 p-6 relative"
+            >
+              <button 
+                onClick={() => setAnalysisResult(null)}
+                className="absolute top-4 right-4 p-1.5 hover:bg-primary/10 rounded-full transition-all"
+              >
+                <Plus className="w-5 h-5 rotate-45 text-primary" />
+              </button>
+              <div className="flex items-center gap-3 mb-4 text-primary">
+                <Sparkles className="w-5 h-5" />
+                <span className="text-sm font-bold uppercase tracking-widest">AI Performance Insights: {students.find(s => s.id === analysisResult.id)?.name}</span>
+              </div>
+              <div className="prose prose-invert prose-sm max-w-none">
+                <Markdown>{analysisResult.text}</Markdown>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {students.length === 0 ? (
@@ -476,6 +498,16 @@ export default function TeacherPortal() {
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         className="w-full bg-surface-elevated border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-hidden transition-all text-text-primary"
                         placeholder="john@example.com"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-text-muted uppercase tracking-widest">Mobile Number</label>
+                      <input 
+                        required
+                        value={formData.mobile}
+                        onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                        className="w-full bg-surface-elevated border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-hidden transition-all text-text-primary"
+                        placeholder="e.g. 9876543210"
                       />
                     </div>
                     <div className="space-y-2">

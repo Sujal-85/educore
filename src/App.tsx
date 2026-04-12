@@ -18,6 +18,8 @@ const Assignments = lazy(() => import('./pages/Assignments'));
 const Timetable = lazy(() => import('./pages/Timetable'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const Reports = lazy(() => import('./pages/Reports'));
+
+import EmailComposer from './components/ui/EmailComposer';
 const Leaderboard = lazy(() => import('./pages/Leaderboard'));
 const FeeManagement = lazy(() => import('./pages/FeeManagement'));
 const Library = lazy(() => import('./pages/Library'));
@@ -81,60 +83,75 @@ export default function App() {
       if (firebaseUser) {
         try {
           const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          const isTeacherByEmail = 
+            firebaseUser.email === 'khedekarsujay720@gmail.com' || 
+            firebaseUser.email === 'teacher@educore.edu' || 
+            firebaseUser.email?.endsWith('@famt.ac.in');
+
           if (userDoc.exists()) {
             const data = userDoc.data();
-            // Check if profile is incomplete (missing required fields for students)
-            const isStudent = data.role?.toLowerCase() === 'student';
-            const isIncomplete = isStudent && (
-              !data.class || !data.section || !data.rollNo ||
-              !data.parentName || !data.parentEmail || !data.parentPhone
-            );
+            // Force role correction for specific teacher emails
+            const activeRole = isTeacherByEmail ? 'teacher' : (data.role || 'student');
+            
+            // Check if profile is complete
+            const isIncomplete = !data.mobile || (activeRole === 'student' && (!data.class || !data.section));
+
+            // Database avatar wins if present, otherwise check localStorage, then Google
+            const dbAvatar = data.avatar || data.profilePic;
+            const localAvatar = localStorage.getItem(`avatar_${firebaseUser.uid}`);
+            const googleAvatar = firebaseUser.photoURL;
+            const finalAvatar = dbAvatar || localAvatar || googleAvatar || '';
+
+            // Sync avatar with localStorage if it's a base64 string and NOT already there
+            if (dbAvatar && dbAvatar.startsWith('data:image/') && dbAvatar !== localAvatar) {
+              localStorage.setItem(`avatar_${firebaseUser.uid}`, dbAvatar);
+            }
 
             setAuthUser({
               uid: firebaseUser.uid,
               ...data,
+              role: activeRole,
               name: data.name || firebaseUser.displayName || '',
-              avatar: data.avatar || firebaseUser.photoURL || '',
+              avatar: finalAvatar,
               isNew: isIncomplete
             });
-          } else {
-            // User exists in Auth but not in Firestore yet (e.g. middle of signup)
-            // Bootstrap the primary user or demo teacher as a teacher if they log in
-            const isPrimary = firebaseUser.email === 'khedekarsujay720@gmail.com';
-            const isDemoTeacher = firebaseUser.email === 'teacher@educore.edu';
 
-            if (isPrimary || isDemoTeacher) {
-              const userData = {
+            // Update role in Firestore if it was corrected
+            if (activeRole !== data.role) {
+              await updateDoc(doc(db, 'users', firebaseUser.uid), { role: activeRole });
+            }
+          } else {
+            // New User or first-time login
+            if (isTeacherByEmail) {
+              const teacherData = {
                 uid: firebaseUser.uid,
                 email: firebaseUser.email,
-                name: isPrimary ? (firebaseUser.displayName || 'Admin') : 'Demo Teacher',
+                name: firebaseUser.displayName || 'Teacher',
                 role: 'teacher',
-                avatar: isPrimary ? (firebaseUser.photoURL || '👨‍🏫') : '👨‍🏫',
-                createdAt: new Date().toISOString(),
-                class: 'FE',
-                section: 'A',
-                marks: {
-                  'Unit Test 1': { mathematics: 0, physics: 0, chemistry: 0, basic_electrical: 0, programming: 0 },
-                  'Unit Test 2': { mathematics: 0, physics: 0, chemistry: 0, basic_electrical: 0, programming: 0 },
-                  'Final': { mathematics: 0, physics: 0, chemistry: 0, basic_electrical: 0, programming: 0 }
-                }
+                avatar: firebaseUser.photoURL || '👨‍🏫',
+                createdAt: new Date().toISOString()
               };
-              await setDoc(doc(db, 'users', firebaseUser.uid), userData);
-              setAuthUser(userData);
+              await setDoc(doc(db, 'users', firebaseUser.uid), teacherData);
+              setAuthUser(teacherData);
             } else {
+              // New Student
+              const googleAvatar = firebaseUser.photoURL;
+              if (googleAvatar) {
+                localStorage.setItem(`avatar_${firebaseUser.uid}`, googleAvatar);
+              }
+
               setAuthUser({ 
                 uid: firebaseUser.uid, 
                 email: firebaseUser.email, 
                 name: firebaseUser.displayName || '',
-                avatar: firebaseUser.photoURL || '',
+                role: 'student',
+                avatar: googleAvatar || '',
                 isNew: true 
               });
             }
           }
         } catch (error) {
-          console.error('Firestore sync error:', error);
-          // If Firestore fails (e.g. permissions), still set basic auth user so they aren't stuck
-          setAuthUser({ uid: firebaseUser.uid, email: firebaseUser.email, isNew: true });
+          console.error('Auth sync error:', error);
         }
       } else {
         setAuthUser(null);
@@ -191,6 +208,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
+      <EmailComposer />
     </Router>
   );
 }

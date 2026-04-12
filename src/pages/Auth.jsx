@@ -23,10 +23,15 @@ import {
   getDoc, 
   setDoc,
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword
+  signInWithEmailAndPassword,
+  collection,
+  query,
+  where,
+  getDocs
 } from '../lib/firebase';
 import { useAppStore } from '../store/useAppStore';
 import { toast } from 'react-hot-toast';
+import Avatar from '../components/ui/Avatar';
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -59,7 +64,8 @@ export default function Auth() {
         ...prev,
         name: user.name || prev.name,
         email: user.email || prev.email,
-        avatar: user.avatar || user.photoURL || prev.avatar
+        role: user.role || prev.role || 'student',
+        avatar: user.avatar || user.photoURL || localStorage.getItem(`avatar_${user.uid}`) || prev.avatar
       }));
     } else if (user && !user.isNew) {
       navigate('/dashboard');
@@ -138,6 +144,60 @@ export default function Auth() {
 
     setLoading(true);
     try {
+      // 1. Check if a document already exists with this UID
+      const userRef = doc(db, 'users', user.uid);
+      const userSnap = await getDoc(userRef);
+
+      // 2. Check for existing student records by mobile/email (added by teacher)
+      const existingQueries = [
+        query(collection(db, 'users'), where('email', '==', user.email)),
+        query(collection(db, 'users'), where('mobile', '==', formData.mobile)),
+        query(collection(db, 'users'), where('phone', '==', formData.mobile)),
+        query(collection(db, 'users'), where('contact', '==', formData.mobile))
+      ];
+      
+      const querySnapshots = await Promise.all(existingQueries.map(q => getDocs(q)));
+      let existingDoc = null;
+      
+      for (const snap of querySnapshots) {
+        if (!snap.empty) {
+          const match = snap.docs.find(d => d.id !== user.uid);
+          if (match) {
+            existingDoc = match;
+            break;
+          }
+        }
+      }
+
+      // 3. Handle Duplicate Logic
+      if (existingDoc) {
+        const data = existingDoc.data();
+        if (data.email === user.email) {
+          // It's the same person (teacher pre-added them). Merge.
+          toast.loading('Syncing your academic record...', { id: 'auth-sync' });
+          const mergedData = {
+            ...data,
+            ...formData,
+            uid: user.uid,
+            email: user.email,
+            avatar: formData.avatar || user.avatar || user.photoURL || data.avatar || '',
+            updatedAt: new Date().toISOString()
+          };
+          
+          await setDoc(userRef, mergedData);
+          await deleteDoc(doc(db, 'users', existingDoc.id));
+          toast.success('Found your record! Academic data synced.', { id: 'auth-sync' });
+          setAuthUser(mergedData);
+          navigate('/dashboard');
+          return;
+        } else {
+          // Different email but same phone number. Block.
+          toast.error('This phone number is already linked to another account.');
+          setLoading(false);
+          return;
+        }
+      }
+
       console.log('Creating user document for:', user.uid);
       const userData = {
         uid: user.uid,
@@ -165,6 +225,10 @@ export default function Auth() {
       };
 
       console.log('User data to save:', userData);
+      if (formData.avatar && formData.avatar.startsWith('data:image/')) {
+        localStorage.setItem(`avatar_${user.uid}`, formData.avatar);
+      }
+      
       await setDoc(doc(db, 'users', user.uid), userData);
       console.log('User document created successfully');
       setAuthUser(userData);
@@ -327,23 +391,43 @@ export default function Auth() {
                 className="space-y-6"
               >
                 <div className="space-y-4">
+                  {/* Role Selection in Step 2 */}
+                  <div className="flex gap-4 p-1 bg-surface-elevated rounded-2xl border border-border">
+                    <button 
+                      type="button"
+                      onClick={() => setFormData({...formData, role: 'student'})}
+                      className={clsx(
+                        "flex-1 py-3 rounded-xl transition-all text-xs font-bold",
+                        formData.role === 'student' ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-text-muted hover:text-text-primary"
+                      )}
+                    >
+                      Student
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setFormData({...formData, role: 'teacher'})}
+                      className={clsx(
+                        "flex-1 py-3 rounded-xl transition-all text-xs font-bold",
+                        formData.role === 'teacher' ? "bg-secondary text-white shadow-lg shadow-secondary/20" : "text-text-muted hover:text-text-primary"
+                      )}
+                    >
+                      Teacher
+                    </button>
+                  </div>
+
                   {/* Avatar Display */}
                   <div className="flex items-center gap-4 mb-4">
-                    {formData.avatar ? (
-                      <img
-                        src={formData.avatar}
-                        alt="Profile"
-                        className="w-16 h-16 rounded-full object-cover border-2 border-primary"
+                    <div className="relative group">
+                      <Avatar 
+                        src={formData.avatar} 
+                        fallback={formData.name?.charAt(0) || 'U'}
+                        size="lg"
                       />
-                    ) : (
-                      <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-2xl font-bold text-primary border-2 border-primary">
-                        {formData.name?.charAt(0) || 'U'}
-                      </div>
-                    )}
+                    </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-text-primary">Profile Picture</p>
-                      <p className="text-xs text-text-muted">
-                        {formData.avatar ? 'From Google' : 'Enter name to generate avatar'}
+                      <p className="text-sm font-bold text-text-primary">Profile Image</p>
+                      <p className="text-[10px] text-text-muted uppercase tracking-wider">
+                        {formData.avatar?.startsWith('data:image') ? 'Custom Upload' : formData.avatar ? 'From Google' : 'Auto-Generated'}
                       </p>
                     </div>
                     <input
@@ -352,6 +436,10 @@ export default function Auth() {
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
+                          if (file.size > 1024 * 1024) {
+                            toast.error('File too large (max 1MB)');
+                            return;
+                          }
                           const reader = new FileReader();
                           reader.onloadend = () => {
                             setFormData({...formData, avatar: reader.result});
@@ -364,9 +452,9 @@ export default function Auth() {
                     />
                     <label
                       htmlFor="avatar-upload"
-                      className="px-4 py-2 rounded-xl bg-surface-elevated border border-border text-xs font-medium cursor-pointer hover:bg-surface-elevated/80 transition-all text-text-primary"
+                      className="px-4 py-2 rounded-xl bg-primary text-white text-[10px] font-bold uppercase tracking-widest cursor-pointer hover:bg-primary/80 transition-all shadow-md active:scale-95"
                     >
-                      Upload
+                      Change
                     </label>
                   </div>
 
